@@ -1,0 +1,12 @@
+# data in facebook takedowns
+facebook_takedowns/data/
+
+# ignore congif folder
+_config/
+
+# ignore general data
+_data/
+
+# ignore cache and checkpoints
+.ipynb_checkpoints/
+__pycache__/
