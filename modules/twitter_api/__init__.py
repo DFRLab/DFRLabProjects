@@ -4,11 +4,12 @@
 '''
 
 # import modules
+import sys
 import pandas as pd
 from bs4 import BeautifulSoup as bs
 
 # import local modules
-from utils import time_string_folder, clean_text
+from utils import create_folder, clean_text
 
 # create functions
 def arguments(screen_name, exclude_replies, \
@@ -53,6 +54,7 @@ def twitter_timeline_columns():
 		'quoted_status_id_str',
 		'quoted_status_url',
 		'quoted_user_screen_name',
+		'quoted_was_deleted',
 		'in_reply_to_status_id_str',
 		'in_reply_to_screen_name',
 		'in_reply_to_user_id_str',
@@ -128,26 +130,38 @@ def quote_attributes(data):
 	'''
 	'''
 	qstatus = 'is_quote_status'
+	istr = 'quoted_status_id_str'
 	link = 'quoted_status_permalink'
+
 	return {
 		'quoted_status_id_str': [
 			(
-				obj['quoted_status_id_str']
-				if obj[qstatus] == True else None
+				obj[istr]
+				if obj[qstatus] == True and istr in obj.keys()
+				else None
 			)
 			for obj in data
 		],
 		'quoted_status_url': [
 			(
 				obj[link]['expanded']
-				if obj[qstatus] == True else None
+				if obj[qstatus] == True and link in obj.keys()
+				else None
 			)
 			for obj in data
 		],
 		'quoted_user_screen_name': [
 			(
 				obj[link]['expanded'].split('/')[3]
-				if obj[qstatus] == True else None
+				if obj[qstatus] == True and link in obj.keys()
+				else None
+			)
+			for obj in data
+		],
+		'quoted_was_deleted': [
+			(
+				1 if obj[qstatus] == True and not istr in obj.keys()
+				else 0
 			)
 			for obj in data
 		]
@@ -255,6 +269,7 @@ def build_dataframe(statuses, tz):
 		'quoted_status_id_str': qt_attrs['quoted_status_id_str'],
 		'quoted_status_url': qt_attrs['quoted_status_url'],
 		'quoted_user_screen_name': qt_attrs['quoted_user_screen_name'],
+		'quoted_was_deleted': qt_attrs['quoted_was_deleted'],
 		'in_reply_to_status_id_str': rp_attrs['in_reply_to_status_id_str'],
 		'in_reply_to_screen_name': rp_attrs['in_reply_to_screen_name'],
 		'in_reply_to_user_id_str': rp_attrs['in_reply_to_user_id_str'],
@@ -275,8 +290,7 @@ def build_dataframe(statuses, tz):
 	df = timestamp_attrs(**args)
 
 	# order columns
-	order_path = '../assets/user_timeline/columns_order.txt'
-	order = [i.rstrip() for i in open(order_path)]
+	order = twitter_timeline_columns()
 	df = df[order].copy()
 
 	return df
@@ -286,7 +300,8 @@ def user_timeline(cxn, **kwargs):
 	'''
 	'''
 	# create time string folder
-	folder = time_string_folder()
+	screen_name = kwargs['screen_name']
+	folder = create_folder(prompt=screen_name)
 
 	# create csv files -> twitter data
 	path = f'{folder}/data.csv'
@@ -303,7 +318,7 @@ def user_timeline(cxn, **kwargs):
 	statuses = cxn.statuses.user_timeline(**args)
 
 
-	# temp
+	# build dataframe
 	df = build_dataframe(statuses, tz)
 
 	# append data to csv file
@@ -354,7 +369,7 @@ def batch_timeline_one_round(cxn, **kwargs):
 		raise ValueError(Error)
 	
 	# create time string folder
-	folder = time_string_folder()
+	folder = create_folder()
 	
 	# create csv files -> twitter data
 	path = f'{folder}/data.csv'
