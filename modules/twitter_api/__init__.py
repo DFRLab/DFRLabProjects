@@ -6,6 +6,8 @@
 # import modules
 import sys
 import pandas as pd
+import urllib.request
+
 from bs4 import BeautifulSoup as bs
 
 # import local modules
@@ -405,4 +407,71 @@ def batch_timeline_one_round(cxn, **kwargs):
 
 
 	print (f'Data is available in {path}')
+	return path
+
+
+def download_video(cxn, **kwargs):
+	'''
+	'''
+	tweet_id = kwargs['_id']
+	data = cxn.statuses.lookup(
+		_id=tweet_id,
+		tweet_mode='extended'	
+	)
+
+	try:
+		media = data[0]['extended_entities']['media'][0]
+	except KeyError:
+		raise ValueError(f'Not video found in `{tweet_id}` id')
+
+	videos = media['video_info']['variants']
+	opts = []
+	for vid in videos:
+		if vid['content_type'] == kwargs['content_type']:
+			opts.append(vid)
+
+	# video resolution
+	def medium(options):
+		'''
+		'''
+		return options[1]
+
+
+	# create folder
+	folder = create_folder(prompt='Video')
+
+	# create csv files -> twitter data
+	path = f'{folder}/{tweet_id}.'
+
+	if kwargs['content_type'] == 'application/x-mpegURL':
+		video_url = opts[0]['url'].split('?')[0]
+		ext = video_url.split('.')[-1]
+		path = path + ext
+
+		# download video
+		urllib.request.urlretrieve(video_url, path)
+
+	else:
+		resolutions = {
+			'high': max,
+			'low': min,
+			'medium': medium
+		}
+
+		function = resolutions[kwargs['resolution']]
+		sort_values = sorted([i['bitrate'] for i in opts])
+		res = function(sort_values)
+
+		# get video
+		video_url = [
+			i['url'] for i in opts if i['bitrate'] == res
+		][0].split('?')[0]
+		
+		ext = video_url.split('.')[-1]
+		path = path + ext
+
+		
+		# download video
+		urllib.request.urlretrieve(video_url, path)
+
 	return path
