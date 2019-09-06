@@ -413,6 +413,13 @@ def batch_timeline_one_round(cxn, **kwargs):
 def download_video(cxn, **kwargs):
 	'''
 	'''
+	# create funtion to download medium value
+	def medium(options):
+		'''
+		'''
+		return options[1]
+
+	# Tweet id
 	tweet_id = kwargs['_id']
 	data = cxn.statuses.lookup(
 		_id=tweet_id,
@@ -430,17 +437,14 @@ def download_video(cxn, **kwargs):
 		if vid['content_type'] == kwargs['content_type']:
 			opts.append(vid)
 
-	# video resolution
-	def medium(options):
-		'''
-		'''
-		return options[1]
-
 
 	# create folder
-	folder = create_folder(prompt='Video')
+	if not 'folder' in kwargs.keys():
+		kwargs['folder'] = create_folder(prompt='Video')
 
+	
 	# create csv files -> twitter data
+	folder = kwargs['folder']
 	path = f'{folder}/{tweet_id}.'
 
 	if kwargs['content_type'] == 'application/x-mpegURL':
@@ -474,4 +478,6 @@ def download_video(cxn, **kwargs):
 		# download video
 		urllib.request.urlretrieve(video_url, path)
 
+
+	print (f'Video is available in {path}')
 	return path
