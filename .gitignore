@@ -10,3 +10,6 @@ _data/
 # ignore cache and checkpoints
 .ipynb_checkpoints/
 __pycache__/
+
+# ignore files
+process_twitter_api/get_followers_description.ipynb

@@ -11,7 +11,7 @@ import urllib.request
 from bs4 import BeautifulSoup as bs
 
 # import local modules
-from utils import create_folder, clean_text
+from utils import create_folder, clean_text, twitter_data_converters
 
 # create functions
 def arguments(screen_name, exclude_replies, \
@@ -298,7 +298,7 @@ def build_dataframe(statuses, tz):
 	return df
 
 
-def user_timeline(cxn, **kwargs):
+def user_timeline(cxn, xlsx=False, **kwargs):
 	'''
 	'''
 	# create time string folder
@@ -343,6 +343,22 @@ def user_timeline(cxn, **kwargs):
 			
 			oldest = min([i['id'] for i in statuses]) - 1
 
+	if xlsx:
+		'''
+		Build excel file
+		'''
+		# read data
+		data = pd.read_csv(
+			path,
+			encoding='utf-8',
+			converters=twitter_data_converters()
+		)
+
+		# save xlsx file
+		p = path.replace('.csv', '.xlsx')
+		data.to_excel(p, index=False)
+
+	
 	print (f'Data is available in {path}')
 	return path
 
@@ -404,7 +420,6 @@ def batch_timeline_one_round(cxn, **kwargs):
 		# append data to csv file
 		df.to_csv(path, index=False, encoding='utf-8', mode='a', \
 			header=False)
-
 
 	print (f'Data is available in {path}')
 	return path
